@@ -21,7 +21,9 @@ import s_whiteboard from "./s_whiteboard.js";
 import http from "http";
 import { Server } from "socket.io";
 // 🔴 NEW — Redis adapter imports
-import { createClient } from "redis";
+//import { createClient } from "redis";
+import { createClient as createRedisClient } from "redis";
+
 import { createAdapter } from "@socket.io/redis-adapter";
 
 import { fileURLToPath } from "url";
@@ -43,7 +45,8 @@ export default function startBackendServer(port) {
 
     (async () => {
         try {
-            const pubClient = createClient({ url: redisUrl });
+            //const pubClient = createClient({ url: redisUrl });
+            const pubClient = createRedisClient({ url: redisUrl });
             const subClient = pubClient.duplicate();
 
             await pubClient.connect();
@@ -51,14 +54,14 @@ export default function startBackendServer(port) {
 
             io.adapter(createAdapter(pubClient, subClient));
 
-            console.log("✅ Redis adapter attached: - server-backend.js:54", redisUrl);
+            console.log("✅ Redis adapter attached: - server-backend.js:57", redisUrl);
         } catch (err) {
-            console.error("❌ Redis connection failed: - server-backend.js:56", err);
+            console.error("❌ Redis connection failed: - server-backend.js:59", err);
         }
     })();
     WhiteboardInfoBackendService.start(io);
 
-    console.log("socketserver running on port: - server-backend.js:61" + port);
+    console.log("socketserver running on port: - server-backend.js:64" + port);
 
     const { accessToken, enableWebdav } = config.backend;
 
@@ -171,7 +174,7 @@ export default function startBackendServer(port) {
         });
 
         form.on("error", function (err) {
-            console.log("File uplaod Error! - server-backend.js:174");
+            console.log("File uplaod Error! - server-backend.js:177");
         });
 
         form.on("end", function () {
@@ -269,7 +272,7 @@ export default function startBackendServer(port) {
     });
 
     function progressUploadFormData(formData, callback) {
-        console.log("Progress new Form Data - server-backend.js:272");
+        console.log("Progress new Form Data - server-backend.js:275");
         const fields = escapeAllContentStrings(formData.fields);
         const wid = fields["wid"];
         if (ReadOnlyBackendService.isReadOnly(wid)) return;
@@ -288,7 +291,7 @@ export default function startBackendServer(port) {
         const savingDir = getSafeFilePath("public/uploads", readOnlyWid);
         fs.ensureDir(savingDir, function (err) {
             if (err) {
-                console.log("Could not create upload folder! - server-backend.js:291", err);
+                console.log("Could not create upload folder! - server-backend.js:294", err);
                 return;
             }
             let imagedata = fields["imagedata"];
@@ -297,11 +300,11 @@ export default function startBackendServer(port) {
                 imagedata = imagedata
                     .replace(/^data:image\/png;base64,/, "")
                     .replace(/^data:image\/jpeg;base64,/, "");
-                console.log(filename, "uploaded - server-backend.js:300");
+                console.log(filename, "uploaded - server-backend.js:303");
                 const savingPath = getSafeFilePath(savingDir, filename);
                 fs.writeFile(savingPath, imagedata, "base64", function (err) {
                     if (err) {
-                        console.log("error - server-backend.js:304", err);
+                        console.log("error - server-backend.js:307", err);
                         callback(err);
                     } else {
                         if (webdavaccess) {
@@ -313,7 +316,7 @@ export default function startBackendServer(port) {
                                     webdavaccess,
                                     function (err) {
                                         if (err) {
-                                            console.log("error - server-backend.js:316", err);
+                                            console.log("error - server-backend.js:319", err);
                                             callback(err);
                                         } else {
                                             callback();
@@ -330,7 +333,7 @@ export default function startBackendServer(port) {
                 });
             } else {
                 callback("no imagedata!");
-                console.log("No image Data found for this upload! - server-backend.js:333", filename);
+                console.log("No image Data found for this upload! - server-backend.js:336", filename);
             }
         });
     }
@@ -350,13 +353,13 @@ export default function startBackendServer(port) {
                 .getDirectoryContents(webdavpath)
                 .then((items) => {
                     const cloudpath = webdavpath + "" + filename;
-                    console.log("webdav saving to: - server-backend.js:353", cloudpath);
+                    console.log("webdav saving to: - server-backend.js:356", cloudpath);
                     fs.createReadStream(imagepath).pipe(client.createWriteStream(cloudpath));
                     callback();
                 })
                 .catch((error) => {
                     callback("403");
-                    console.log("Could not connect to webdav! - server-backend.js:359");
+                    console.log("Could not connect to webdav! - server-backend.js:362");
                 });
         } else {
             callback("Error: no access data!");
@@ -461,10 +464,10 @@ export default function startBackendServer(port) {
         });
 
         if (purified !== decoded) {
-            console.warn("setTextboxText payload needed be DOMpurified - server-backend.js:464");
-            console.warn("raw: - server-backend.js:465" + removeControlCharactersForLogs(raw));
-            console.warn("decoded: - server-backend.js:466" + removeControlCharactersForLogs(decoded));
-            console.warn("purified: - server-backend.js:467" + removeControlCharactersForLogs(purified));
+            console.warn("setTextboxText payload needed be DOMpurified - server-backend.js:467");
+            console.warn("raw: - server-backend.js:468" + removeControlCharactersForLogs(raw));
+            console.warn("decoded: - server-backend.js:469" + removeControlCharactersForLogs(decoded));
+            console.warn("purified: - server-backend.js:470" + removeControlCharactersForLogs(purified));
         }
 
         content["d"][1] = base64encode(purified);
@@ -485,6 +488,6 @@ export default function startBackendServer(port) {
 
     process.on("unhandledRejection", (error) => {
         // Will print "unhandledRejection err is not defined"
-        console.log("unhandledRejection - server-backend.js:488", error.message);
+        console.log("unhandledRejection - server-backend.js:491", error.message);
     });
 }
